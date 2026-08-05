@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Newsletter Email Tester</title>
+<style>
+  :root {
+    --indigo: #33327e;
+    --indigo-dark: #262566;
+    --bg: #f2f3f8;
+    --card: #ffffff;
+    --text: #1e1e2f;
+    --muted: #6b6b80;
+    --ok: #1c8a4c;
+    --err: #c0392b;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: var(--indigo);
+    color: #fff;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: .2px; }
+  header .badge {
+    margin-left: auto; font-size: 12px; padding: 5px 12px; border-radius: 999px;
+    background: rgba(255,255,255,.15);
+  }
+  header .badge.err { background: #c0392b; }
+  main {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 24px;
+    padding: 24px 28px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: 0 1px 4px rgba(30,30,60,.08);
+  }
+  .panel h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 14px; }
+
+  #dropzone {
+    border: 2px dashed #b9bad4;
+    border-radius: var(--radius);
+    padding: 34px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    color: var(--muted);
+  }
+  #dropzone.drag { border-color: var(--indigo); background: #eef0fb; }
+  #dropzone.loaded { border-style: solid; border-color: var(--ok); color: var(--text); }
+  #dropzone strong { color: var(--indigo); }
+  #dropzone .file-name { font-weight: 700; color: var(--ok); word-break: break-all; }
+  #fileInput { display: none; }
+
+  label { display: block; font-size: 13px; font-weight: 600; margin: 16px 0 6px; }
+  input[type=text] {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #d4d5e3;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  input[type=text]:focus { outline: 2px solid var(--indigo); border-color: transparent; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+  .quick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    font-size: 12px; padding: 4px 10px; border-radius: 999px;
+    background: #eef0fb; color: var(--indigo); cursor: pointer; border: none;
+  }
+  .chip:hover { background: #dde1f7; }
+
+  #sendBtn {
+    width: 100%;
+    margin-top: 22px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--indigo);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  #sendBtn:hover:not(:disabled) { background: var(--indigo-dark); }
+  #sendBtn:disabled { background: #b9bad4; cursor: not-allowed; }
+
+  #results { margin-top: 16px; display: none; }
+  .result-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px;
+    background: #f6f7fb;
+  }
+  .result-row .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .result-row.ok .dot { background: var(--ok); }
+  .result-row.err .dot { background: var(--err); }
+  .result-row .who { font-weight: 600; }
+  .result-row .msg { color: var(--muted); font-size: 12px; word-break: break-word; }
+
+  .preview-wrap { display: flex; flex-direction: column; height: calc(100vh - 130px); min-height: 480px; }
+  .preview-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .preview-toolbar button {
+    padding: 6px 14px; font-size: 13px; border-radius: 8px; cursor: pointer;
+    border: 1px solid #d4d5e3; background: #fff; color: var(--muted);
+  }
+  .preview-toolbar button.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
+  #previewFrame {
+    flex: 1;
+    width: 100%;
+    border: 1px solid #e2e3ee;
+    border-radius: 10px;
+    background: #fff;
+    transition: max-width .2s;
+    margin: 0 auto;
+  }
+  #previewFrame.mobile { max-width: 390px; }
+  .empty-preview {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 14px; border: 1px dashed #d4d5e3; border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 7l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <h1>Newsletter Email Tester</h1>
+  <span class="badge" id="configBadge">Verificando configuración…</span>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>1 · Archivo y destinatarios</h2>
+
+    <div id="dropzone">
+      <input type="file" id="fileInput" accept=".html,.htm" />
+      <div id="dropText">
+        Arrastra tu archivo <strong>.html</strong> aquí<br />
+        o haz clic para seleccionarlo
+      </div>
+    </div>
+
+    <label for="subject">Asunto</label>
+    <input type="text" id="subject" placeholder="[TEST] Boletín Julio" />
+
+    <label for="recipients">Destinatarios</label>
+    <input type="text" id="recipients" placeholder="alguien@gmail.com, otro@icloud.com" />
+    <div class="hint">Separa varios correos con comas. Se envía una copia individual a cada uno.</div>
+    <div class="quick-chips" id="chips"></div>
+
+    <button id="sendBtn" disabled>Enviar test ✉️</button>
+
+    <div id="results"></div>
+  </section>
+
+  <section class="panel preview-wrap">
+    <div class="preview-toolbar">
+      <h2 style="margin:0; flex:1;">2 · Preview</h2>
+      <button id="btnDesktop" class="active">🖥️ Desktop</button>
+      <button id="btnMobile">📱 Móvil</button>
+    </div>
+    <div class="empty-preview" id="emptyPreview">El preview aparecerá aquí al cargar el archivo</div>
+    <iframe id="previewFrame" style="display:none" sandbox="allow-same-origin" title="Preview del correo"></iframe>
+  </section>
+</main>
+
+<script>
+  let htmlContent = '';
+  let fileName = '';
+
+  const $ = (id) => document.getElementById(id);
+  const dropzone = $('dropzone');
+  const fileInput = $('fileInput');
+  const sendBtn = $('sendBtn');
+
+  // ---- Configuración del servidor ----
+  fetch('/api/config').then(r => r.json()).then(cfg => {
+    const badge = $('configBadge');
+    if (cfg.configured) {
+      badge.textContent = 'Enviando desde: ' + cfg.from;
+    } else {
+      badge.textContent = '⚠️ SMTP sin configurar (revisa .env)';
+      badge.classList.add('err');
+    }
+    if (cfg.defaultRecipients && !$('recipients').value) {
+      $('recipients').value = cfg.defaultRecipients;
+    }
+    updateSendState();
+  });
+
+  // ---- Chips rápidos de dominios ----
+  const domains = ['@gmail.com', '@icloud.com', '@outlook.com', '@hotmail.com'];
+  domains.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = d;
+    b.onclick = () => {
+      const inp = $('recipients');
+      const val = inp.value.trim();
+      inp.value = val ? val.replace(/,?\s*$/, ', ') + d : d;
+      inp.focus();
+      updateSendState();
+    };
+    $('chips').appendChild(b);
+  });
+
+  // ---- Carga del archivo ----
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => fileInput.files[0] && loadFile(fileInput.files[0]));
+
+  ['dragover', 'dragleave', 'drop'].forEach(ev =>
+    dropzone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); })
+  );
+  dropzone.addEventListener('dragover', () => dropzone.classList.add('drag'));
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e => {
+    dropzone.classList.remove('drag');
+    const f = e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+
+  function loadFile(file) {
+    if (!/\.html?$/i.test(file.name)) {
+      alert('Solo archivos .html');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      htmlContent = reader.result;
+      fileName = file.name;
+      dropzone.classList.add('loaded');
+      $('dropText').innerHTML =
+        '✅ <span class="file-name">' + file.name + '</span><br /><small>Clic para cambiar de archivo</small>';
+
+      // Asunto sugerido desde el <title> del HTML o el nombre del archivo
+      const m = htmlContent.match(/<title[^>]*>([^<]+)<\/title>/i);
+      if (!$('subject').value) {
+        $('subject').value = '[TEST] ' + ((m && m[1].trim()) || file.name.replace(/\.html?$/i, ''));
+      }
+
+      // Preview
+      $('emptyPreview').style.display = 'none';
+      const frame = $('previewFrame');
+      frame.style.display = 'block';
+      frame.srcdoc = htmlContent;
+
+      updateSendState();
+    };
+    reader.readAsText(file);
+  }
+
+  // ---- Preview desktop / móvil ----
+  $('btnDesktop').onclick = () => setPreview(false);
+  $('btnMobile').onclick = () => setPreview(true);
+  function setPreview(mobile) {
+    $('previewFrame').classList.toggle('mobile', mobile);
+    $('btnMobile').classList.toggle('active', mobile);
+    $('btnDesktop').classList.toggle('active', !mobile);
+  }
+
+  // ---- Envío ----
+  $('recipients').addEventListener('input', updateSendState);
+  function updateSendState() {
+    sendBtn.disabled = !htmlContent || !$('recipients').value.trim();
+  }
+
+  sendBtn.addEventListener('click', async () => {
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Enviando…';
+    const results = $('results');
+    results.style.display = 'none';
+    results.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          html: htmlContent,
+          subject: $('subject').value,
+          recipients: $('recipients').value,
+          fileName,
+        }),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        results.innerHTML = '<div class="result-row err"><span class="dot"></span><span class="msg">' + data.error + '</span></div>';
+      } else {
+        results.innerHTML = data.detail.map(d =>
+          '<div class="result-row ' + (d.ok ? 'ok' : 'err') + '">' +
+            '<span class="dot"></span>' +
+            '<span class="who">' + d.to + '</span>' +
+            '<span class="msg">' + (d.ok ? 'Enviado ✓' : (d.error || 'Error')) + '</span>' +
+          '</div>'
+        ).join('');
+      }
+    } catch (err) {
+      results.innerHTML = '<div class="result-row err"><span class="dot"></span><span class="msg">No se pudo conectar al servidor: ' + err.message + '</span></div>';
+    }
+
+    results.style.display = 'block';
+    sendBtn.textContent = 'Enviar test ✉️';
+    updateSendState();
+  });
+</script>
+</body>
+</html>
