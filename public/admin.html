@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Accesos · Newsletter Email Tester</title>
+<style>
+  :root {
+    --indigo: #33327e;
+    --bg: #f2f3f8;
+    --card: #ffffff;
+    --text: #1e1e2f;
+    --muted: #6b6b80;
+    --ok: #1c8a4c;
+    --err: #c0392b;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  header {
+    background: var(--indigo); color: #fff; padding: 20px 28px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header a { color: #fff; font-size: 13px; opacity: .85; text-decoration: none; margin-left: auto; }
+  header a:hover { opacity: 1; text-decoration: underline; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 28px; display: grid; gap: 20px; }
+  .panel { background: var(--card); border-radius: var(--radius); padding: 22px; box-shadow: 0 1px 4px rgba(30,30,60,.08); }
+  .panel h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 6px; }
+  .panel .hint { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+
+  form { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 16px; }
+  input[type=text] {
+    flex: 1; min-width: 190px; padding: 10px 12px;
+    border: 1px solid #d4d5e3; border-radius: 8px; font-size: 14px; font-family: inherit;
+  }
+  input[type=text]:focus { outline: 2px solid var(--indigo); border-color: transparent; }
+  button {
+    padding: 10px 18px; font-size: 14px; font-weight: 600; font-family: inherit;
+    background: var(--indigo); color: #fff; border: 0; border-radius: 8px; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .row {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 13px; border-radius: 9px; background: #f7f8fc; margin-bottom: 7px;
+  }
+  .row .entry { font-weight: 600; font-size: 13.5px; word-break: break-all; }
+  .row .meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .row .grow { flex: 1; min-width: 0; }
+  .row .tag {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 999px; background: #e6e7f3; color: var(--indigo); white-space: nowrap;
+  }
+  .row .tag.admin { background: #fdf0d9; color: #8a5a00; }
+  .row button {
+    background: none; color: var(--err); border: 1px solid #eccac5;
+    padding: 5px 11px; font-size: 12px; border-radius: 7px;
+  }
+  .row button:hover { background: #fdeceb; }
+  .row img { width: 26px; height: 26px; border-radius: 50%; background: #e6e7f3; }
+
+  .empty { font-size: 13px; color: var(--muted); padding: 12px 0; }
+  .msg { padding: 11px 13px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; display: none; line-height: 1.45; }
+  .msg.err { background: #fdeceb; color: var(--err); }
+  .msg.ok { background: #e8f5ee; color: var(--ok); }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V6l7-3z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  <h1>Accesos</h1>
+  <a href="/">← Volver al enviador</a>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Autorizar a alguien</h2>
+    <div class="hint">
+      Un correo exacto (<code>ana@gmail.com</code>) o un dominio entero
+      (<code>@mensaperu.org</code>, que autoriza a todos los de ese dominio).
+      Los cambios son inmediatos: no hace falta volver a desplegar.
+    </div>
+
+    <div class="msg" id="msg"></div>
+
+    <form id="addForm">
+      <input type="text" id="entry" placeholder="correo@ejemplo.com o @dominio.com" autocomplete="off" />
+      <input type="text" id="note" placeholder="Nota (opcional)" autocomplete="off" />
+      <button type="submit" id="addBtn">Autorizar</button>
+    </form>
+
+    <div id="entries"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Acceso fijo</h2>
+    <div class="hint">
+      Definido en variables de entorno del servidor. No se puede quitar desde
+      aquí a propósito: es el candado que evita quedarte fuera de tu propia app
+      si se borra algo por error. Para cambiarlo, edita las variables en Vercel
+      y vuelve a desplegar.
+    </div>
+    <div id="fixed"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Quién ha entrado</h2>
+    <div class="hint">Se registra solo en cada inicio de sesión.</div>
+    <div id="users"></div>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function show(text, ok) {
+    const m = $('msg');
+    m.textContent = text;
+    m.className = 'msg ' + (ok ? 'ok' : 'err');
+    m.style.display = 'block';
+  }
+
+  const fecha = (iso) => iso ? new Date(iso).toLocaleDateString('es', { day:'numeric', month:'short', year:'numeric' }) : '';
+
+  function render(data) {
+    // --- Lista editable ---
+    $('entries').innerHTML = data.entries.length
+      ? data.entries.map(e =>
+          '<div class="row">' +
+            '<div class="grow">' +
+              '<div class="entry">' + esc(e.entry) + '</div>' +
+              '<div class="meta">' + (e.note ? esc(e.note) + ' · ' : '') +
+                'agregado por ' + esc(e.added_by || '?') + ' el ' + fecha(e.created_at) +
+              '</div>' +
+            '</div>' +
+            '<button data-id="' + e.id + '" data-entry="' + esc(e.entry) + '">Quitar</button>' +
+          '</div>'
+        ).join('')
+      : '<div class="empty">Nadie más autorizado todavía. Solo entran los del acceso fijo.</div>';
+
+    $('entries').querySelectorAll('button').forEach(b => {
+      b.onclick = async () => {
+        if (!confirm('¿Quitar el acceso de ' + b.dataset.entry + '?')) return;
+        const res = await fetch('/api/admin/access/' + b.dataset.id, { method: 'DELETE' });
+        const j = await res.json();
+        if (!res.ok) return show(j.error, false);
+        show(b.dataset.entry + ' ya no tiene acceso.', true);
+        load();
+      };
+    });
+
+    // --- Solo lectura ---
+    const fijo = [
+      ...data.admins.map(e => ({ entry: e, admin: true })),
+      ...data.fromEnv.filter(e => !data.admins.includes(e)).map(e => ({ entry: e, admin: false })),
+    ];
+    $('fixed').innerHTML = fijo.length
+      ? fijo.map(f =>
+          '<div class="row">' +
+            '<div class="grow"><div class="entry">' + esc(f.entry) + '</div></div>' +
+            '<span class="tag' + (f.admin ? ' admin' : '') + '">' +
+              (f.admin ? 'Admin' : 'ALLOWED_EMAILS') +
+            '</span>' +
+          '</div>'
+        ).join('')
+      : '<div class="empty">Ninguno. Define ADMIN_EMAILS en el servidor.</div>';
+
+    // --- Usuarios ---
+    $('users').innerHTML = data.users.length
+      ? data.users.map(u =>
+          '<div class="row">' +
+            (u.picture ? '<img src="' + esc(u.picture) + '" alt="" />' : '<img alt="" />') +
+            '<div class="grow">' +
+              '<div class="entry">' + esc(u.email) + '</div>' +
+              '<div class="meta">' + (u.name ? esc(u.name) + ' · ' : '') +
+                'último acceso ' + fecha(u.last_login_at) + '</div>' +
+            '</div>' +
+          '</div>'
+        ).join('')
+      : '<div class="empty">Nadie ha iniciado sesión todavía.</div>';
+  }
+
+  async function load() {
+    const res = await fetch('/api/admin/access');
+    if (res.status === 401) { location.href = '/'; return; }
+    if (res.status === 403) {
+      document.querySelector('main').innerHTML =
+        '<section class="panel"><div class="empty">Esta página es solo para el admin.</div></section>';
+      return;
+    }
+    const data = await res.json();
+    if (!data.dbEnabled) {
+      show('Sin Supabase configurado no se puede editar la lista. Solo funciona ALLOWED_EMAILS.', false);
+      $('addBtn').disabled = true;
+    }
+    render(data);
+  }
+
+  $('addForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    $('addBtn').disabled = true;
+    try {
+      const res = await fetch('/api/admin/access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry: $('entry').value, note: $('note').value }),
+      });
+      const j = await res.json();
+      if (!res.ok) return show(j.error, false);
+      show(j.entry.entry + ' ya puede iniciar sesión.', true);
+      $('entry').value = '';
+      $('note').value = '';
+      load();
+    } finally {
+      $('addBtn').disabled = false;
+    }
+  });
+
+  load();
+</script>
+</body>
+</html>

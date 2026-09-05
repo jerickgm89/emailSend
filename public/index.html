@@ -136,14 +136,116 @@
     flex: 1; display: flex; align-items: center; justify-content: center;
     color: var(--muted); font-size: 14px; border: 1px dashed #d4d5e3; border-radius: 10px;
   }
+  /* ---- Login ---- */
+  #authGate {
+    position: fixed; inset: 0; z-index: 50;
+    background: var(--bg);
+    display: grid; place-items: center; padding: 24px;
+  }
+  #authGate .card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 38px 34px; max-width: 400px; width: 100%; text-align: center;
+    box-shadow: 0 4px 22px rgba(30,30,60,.12);
+  }
+  #authGate h2 { font-size: 19px; margin-bottom: 8px; color: var(--text); text-transform: none; letter-spacing: 0; }
+  #authGate p { font-size: 13.5px; color: var(--muted); line-height: 1.55; margin-bottom: 22px; }
+  #authGate .mail-icon { color: var(--indigo); margin-bottom: 14px; }
+  .gbtn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 12px 18px; font-size: 14.5px; font-weight: 600;
+    background: #fff; color: #3c4043; border: 1px solid #dadce0; border-radius: 8px;
+    cursor: pointer; text-decoration: none; transition: background .15s, box-shadow .15s;
+  }
+  .gbtn:hover { background: #f7f8f8; box-shadow: 0 1px 3px rgba(60,64,67,.2); }
+  #authError {
+    display: none; margin-bottom: 18px; padding: 11px 13px; border-radius: 8px;
+    background: #fdeceb; color: var(--err); font-size: 13px; text-align: left; line-height: 1.45;
+  }
+
+  /* ---- Selector de remitente ---- */
+  #senderBox { margin-top: 18px; border: 1px solid #e3e4ef; border-radius: 10px; padding: 4px; }
+  .sender-opt {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 12px; border-radius: 7px; cursor: pointer; transition: background .12s;
+  }
+  .sender-opt:hover { background: #f6f7fc; }
+  .sender-opt input { margin-top: 2px; accent-color: var(--indigo); flex-shrink: 0; }
+  .sender-opt .t { font-size: 13.5px; font-weight: 600; }
+  .sender-opt .s { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; word-break: break-word; }
+  .sender-opt.disabled { opacity: .55; cursor: default; }
+  .sender-opt.disabled:hover { background: none; }
+  #gmailAction {
+    display: block; width: 100%; margin-top: 8px; padding: 9px;
+    font-size: 12.5px; font-weight: 600; font-family: inherit;
+    border: 1px solid #dadce0; border-radius: 7px; background: #fff; color: #3c4043; cursor: pointer;
+  }
+  #gmailAction:hover:not(:disabled) { background: #f7f8f8; }
+  #gmailAction:disabled { opacity: .45; cursor: not-allowed; }
+  #gmailNote {
+    display: none; margin-top: 8px; padding: 9px 11px; border-radius: 7px;
+    font-size: 12px; line-height: 1.45; background: #fdeceb; color: var(--err);
+  }
+  #gmailNote.ok { background: #e8f5ee; color: var(--ok); }
+
+  /* ---- Progreso del envío ---- */
+  #progress { display: none; margin-top: 16px; }
+  #progressBar { height: 8px; border-radius: 999px; background: #e3e4ef; overflow: hidden; }
+  #progressFill { height: 100%; width: 0; background: var(--indigo); transition: width .3s ease; }
+  #progressFill.done { background: var(--ok); }
+  #progressText { font-size: 12.5px; color: var(--muted); margin-top: 7px; }
+  #quotaText { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  /* ---- Campañas a medias ---- */
+  #resumeBox { display: none; margin-top: 16px; padding: 12px 14px; border-radius: 10px; background: #fff8e6; border: 1px solid #f0e0b0; }
+  #resumeBox .t { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  #resumeBox .s { font-size: 12px; color: var(--muted); line-height: 1.45; }
+  #resumeBox button {
+    margin-top: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 600; font-family: inherit;
+    border: 0; border-radius: 7px; background: var(--indigo); color: #fff; cursor: pointer; width: auto;
+  }
+
+  /* ---- Usuario en el header ---- */
+  #userBox { display: none; align-items: center; gap: 9px; margin-left: 14px; }
+  #userBox img { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.2); }
+  #userBox .email { font-size: 12.5px; opacity: .9; }
+  #logoutBtn {
+    background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 999px;
+    padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  #logoutBtn:hover { background: rgba(255,255,255,.28); }
+  #adminLink {
+    display: none; color: #fff; font-size: 12px; text-decoration: none;
+    background: rgba(255,255,255,.15); border-radius: 999px; padding: 5px 12px;
+  }
+  #adminLink:hover { background: rgba(255,255,255,.28); }
+  @media (max-width: 640px) { #userBox .email { display: none; } }
 </style>
 </head>
 <body>
+
+<div id="authGate">
+  <div class="card">
+    <svg class="mail-icon" width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M3 7l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h2>Newsletter Email Tester</h2>
+    <p id="authIntro">Inicia sesión con la cuenta de Google autorizada para enviar tests.</p>
+    <div id="authError"></div>
+    <a class="gbtn" id="loginBtn" href="/auth/google">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continuar con Google
+    </a>
+  </div>
+</div>
 
 <header>
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 7l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   <h1>Newsletter Email Tester</h1>
   <span class="badge" id="configBadge">Verificando configuración…</span>
+  <div id="userBox">
+    <img id="userAvatar" alt="" />
+    <span class="email" id="userEmail"></span>
+    <a id="adminLink" href="/admin.html">Accesos</a>
+    <button id="logoutBtn">Salir</button>
+  </div>
 </header>
 
 <main>
@@ -166,7 +268,39 @@
     <div class="hint">Separa varios correos con comas. Se envía una copia individual a cada uno.</div>
     <div class="quick-chips" id="chips"></div>
 
+    <label>Enviar desde</label>
+    <div id="senderBox">
+      <label class="sender-opt" id="optSmtp">
+        <input type="radio" name="sender" value="smtp" checked />
+        <span>
+          <span class="t">Cuenta del sistema</span>
+          <span class="s" id="smtpDesc">—</span>
+        </span>
+      </label>
+      <label class="sender-opt disabled" id="optGmail">
+        <input type="radio" name="sender" value="gmail" disabled />
+        <span>
+          <span class="t">Mi cuenta de Gmail</span>
+          <span class="s" id="gmailDesc">Sin conectar. Los correos saldrían de tu propia bandeja y con tu cuota.</span>
+        </span>
+      </label>
+      <button id="gmailAction">Conectar mi Gmail</button>
+      <div id="gmailNote"></div>
+    </div>
+
+    <div id="resumeBox">
+      <div class="t">Tienes un envío a medias</div>
+      <div class="s" id="resumeText"></div>
+      <button id="resumeBtn">Reanudar</button>
+    </div>
+
     <button id="sendBtn" disabled>Enviar test ✉️</button>
+
+    <div id="progress">
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <div id="progressText"></div>
+      <div id="quotaText"></div>
+    </div>
 
     <div id="results"></div>
   </section>
@@ -191,20 +325,136 @@
   const fileInput = $('fileInput');
   const sendBtn = $('sendBtn');
 
+  // ---- Sesión ----
+  function showAuthError(msg) {
+    const box = $('authError');
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+
+  // El callback de OAuth redirige a /?auth_error=… cuando algo falla.
+  const authErrParam = new URLSearchParams(location.search).get('auth_error');
+  if (authErrParam) {
+    showAuthError(authErrParam);
+    history.replaceState(null, '', location.pathname);
+  }
+
+  async function boot() {
+    const res = await fetch('/api/me');
+    if (res.status === 401) {
+      const data = await res.json().catch(() => ({}));
+      if (data.authConfigured === false) {
+        $('loginBtn').style.display = 'none';
+        $('authIntro').textContent =
+          'El login con Google no está configurado en el servidor. Falta definir GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET y SESSION_SECRET.';
+      }
+      return; // el overlay #authGate ya está visible
+    }
+
+    const { user } = await res.json();
+    $('userAvatar').src = user.picture || '';
+    $('userEmail').textContent = user.email;
+    $('userBox').style.display = 'flex';
+    if (user.isAdmin) $('adminLink').style.display = 'inline-block';
+    $('authGate').style.display = 'none';
+    await loadConfig();
+  }
+
+  $('logoutBtn').addEventListener('click', async () => {
+    await fetch('/auth/logout', { method: 'POST' });
+    location.reload();
+  });
+
   // ---- Configuración del servidor ----
-  fetch('/api/config').then(r => r.json()).then(cfg => {
+  let gmailConnected = false;
+
+  function showGmailNote(msg, ok) {
+    const n = $('gmailNote');
+    n.textContent = msg;
+    n.className = ok ? 'ok' : '';
+    n.style.display = 'block';
+  }
+
+  // El callback de conectar Gmail vuelve con ?gmail_ok= o ?gmail_error=
+  const params = new URLSearchParams(location.search);
+  const gmailOk = params.get('gmail_ok');
+  const gmailErr = params.get('gmail_error');
+  if (gmailOk || gmailErr) history.replaceState(null, '', location.pathname);
+
+  function renderSender(cfg) {
+    $('smtpDesc').textContent = cfg.configured
+      ? cfg.from + ' · cuota compartida entre todos'
+      : 'SMTP sin configurar en el servidor';
+    $('optSmtp').querySelector('input').disabled = !cfg.configured;
+    $('optSmtp').classList.toggle('disabled', !cfg.configured);
+
+    gmailConnected = Boolean(cfg.gmail && cfg.gmail.connected);
+    const radio = $('optGmail').querySelector('input');
+
+    if (gmailConnected) {
+      $('gmailDesc').textContent = cfg.gmail.email + ' · tu propia cuota (~500/día) y sale de tu bandeja';
+      radio.disabled = false;
+      $('optGmail').classList.remove('disabled');
+      radio.checked = true;              // si la conectó, es lo que quiere usar
+      $('gmailAction').textContent = 'Desconectar Gmail';
+      $('gmailAction').disabled = false;
+    } else {
+      $('gmailDesc').textContent = cfg.gmail && cfg.gmail.reason === 'no-db'
+        ? 'Necesita Supabase configurado en el servidor.'
+        : 'Sin conectar. Los correos saldrían de tu propia bandeja y con tu cuota.';
+      radio.disabled = true;
+      $('optGmail').classList.add('disabled');
+      $('optSmtp').querySelector('input').checked = cfg.configured;
+      $('gmailAction').textContent = 'Conectar mi Gmail';
+      $('gmailAction').disabled = Boolean(cfg.gmail && cfg.gmail.reason === 'no-db');
+    }
+  }
+
+  $('gmailAction').addEventListener('click', async () => {
+    if (!gmailConnected) { location.href = '/auth/gmail/connect'; return; }
+    if (!confirm('¿Desconectar tu cuenta de Gmail? El token guardado se marcará como revocado.')) return;
+    await fetch('/auth/gmail/disconnect', { method: 'POST' });
+    location.reload();
+  });
+
+  const currentSender = () => document.querySelector('input[name=sender]:checked')?.value || 'smtp';
+
+  async function loadConfig() {
+    const cfg = await fetch('/api/config').then(r => r.json());
     const badge = $('configBadge');
     if (cfg.configured) {
-      badge.textContent = 'Enviando desde: ' + cfg.from;
+      badge.textContent = 'SMTP: ' + cfg.from;
     } else {
       badge.textContent = '⚠️ SMTP sin configurar (revisa .env)';
       badge.classList.add('err');
     }
+    renderSender(cfg);
+    queueEnabled = Boolean(cfg.queue);
+    if (gmailOk) showGmailNote('Gmail conectado: ' + gmailOk, true);
+    if (gmailErr) showGmailNote(gmailErr, false);
+
     if (cfg.defaultRecipients && !$('recipients').value) {
       $('recipients').value = cfg.defaultRecipients;
     }
     updateSendState();
-  });
+    if (queueEnabled) loadUnfinished();
+  }
+
+  boot();
+
+  // ---- Campañas a medias (la pestaña se cerró a mitad del envío) ----
+  let queueEnabled = false;
+
+  async function loadUnfinished() {
+    const { campaigns } = await fetch('/api/campaigns/unfinished').then(r => r.json());
+    if (!campaigns.length) { $('resumeBox').style.display = 'none'; return; }
+    const c = campaigns[0];
+    $('resumeText').textContent =
+      '"' + c.subject + '" — ' + c.sent + ' de ' + c.total + ' enviados, ' + c.pending + ' pendientes' +
+      (c.status === 'quota_exceeded' ? ' (se agotó la cuota diaria).' : '.');
+    $('resumeBtn').onclick = () => { $('resumeBox').style.display = 'none'; runCampaign(c.id); };
+    $('resumeBox').style.display = 'block';
+  }
 
   // ---- Chips rápidos de dominios ----
   const domains = ['@gmail.com', '@icloud.com', '@outlook.com', '@hotmail.com'];
@@ -279,47 +529,139 @@
   // ---- Envío ----
   $('recipients').addEventListener('input', updateSendState);
   function updateSendState() {
-    sendBtn.disabled = !htmlContent || !$('recipients').value.trim();
+    sendBtn.disabled = sending || !htmlContent || !$('recipients').value.trim();
+  }
+
+  let sending = false;
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const results = () => $('results');
+
+  function showError(msg) {
+    results().innerHTML = '<div class="result-row err"><span class="dot"></span><span class="msg">' + esc(msg) + '</span></div>';
+    results().style.display = 'block';
+  }
+
+  function renderDetail(detail) {
+    results().innerHTML = detail.map(d =>
+      '<div class="result-row ' + (d.pending ? '' : (d.ok ? 'ok' : 'err')) + '">' +
+        '<span class="dot"></span>' +
+        '<span class="who">' + esc(d.to) + '</span>' +
+        '<span class="msg">' + (d.pending ? 'En cola…' : (d.ok ? 'Enviado ✓' : esc(d.error || 'Error'))) + '</span>' +
+      '</div>'
+    ).join('');
+    results().style.display = 'block';
+  }
+
+  function renderProgress(p) {
+    const pct = p.total ? Math.round(((p.sent + p.failed) / p.total) * 100) : 0;
+    $('progress').style.display = 'block';
+    $('progressFill').style.width = pct + '%';
+    $('progressFill').classList.toggle('done', pct === 100);
+    $('progressText').textContent =
+      p.sent + ' enviados' + (p.failed ? ' · ' + p.failed + ' con error' : '') +
+      ' · ' + p.pending + ' pendientes de ' + p.total;
+    if (p.quota) {
+      $('quotaText').textContent =
+        'Cuota de hoy: ' + p.quota.used + ' de ' + p.quota.limit + ' usados (se reinicia a medianoche UTC).';
+    }
+  }
+
+  // Un 401 significa que la cookie de 7 días expiró: de vuelta al login.
+  function bounceIfLoggedOut(res) {
+    if (res.status !== 401) return false;
+    location.href = '/?auth_error=' + encodeURIComponent('Tu sesión expiró. Inicia sesión de nuevo.');
+    return true;
+  }
+
+  // 409 = el refresh token de Gmail caducó o fue revocado (los 7 días del modo
+  // Testing). Solo el usuario puede arreglarlo, reconectando.
+  async function handleReconnect(data) {
+    await loadConfig();
+    showGmailNote(data.error, false);
+    showError(data.error);
+  }
+
+  /**
+   * Vacía la cola de una campaña llamando a /step hasta que no queden
+   * pendientes. Cada lote es una petición corta, así que ninguna se acerca al
+   * tope de duración de la función de Vercel.
+   */
+  async function runCampaign(id) {
+    while (true) {
+      const res = await fetch('/api/campaigns/' + id + '/step', { method: 'POST' });
+      if (bounceIfLoggedOut(res)) return;
+      const data = await res.json();
+
+      if (res.status === 409 && data.needsReconnect) {
+        await handleReconnect(data);
+        await loadUnfinished();   // la campaña queda a medias, reanudable
+        return;
+      }
+      if (!res.ok) { showError(data.error || 'Error enviando el lote.'); return; }
+
+      renderProgress(data);
+      renderDetail(data.detail);
+
+      if (data.quotaExceeded) { showError(data.error); await loadUnfinished(); return; }
+      if (data.done) return;
+    }
   }
 
   sendBtn.addEventListener('click', async () => {
+    sending = true;
     sendBtn.disabled = true;
     sendBtn.textContent = 'Enviando…';
-    const results = $('results');
-    results.style.display = 'none';
-    results.innerHTML = '';
+    results().style.display = 'none';
+    results().innerHTML = '';
+    $('progress').style.display = 'none';
+    $('resumeBox').style.display = 'none';
 
     try {
-      const res = await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          html: htmlContent,
-          subject: $('subject').value,
-          recipients: $('recipients').value,
-          fileName,
-        }),
-      });
-      const data = await res.json();
+      if (queueEnabled) {
+        // Con base: se crea la campaña y se vacía por lotes.
+        const res = await fetch('/api/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            html: htmlContent, subject: $('subject').value,
+            recipients: $('recipients').value, fileName, sender: currentSender(),
+          }),
+        });
+        if (bounceIfLoggedOut(res)) return;
+        const data = await res.json();
 
-      if (data.error) {
-        results.innerHTML = '<div class="result-row err"><span class="dot"></span><span class="msg">' + data.error + '</span></div>';
+        if (res.status === 409 && data.needsReconnect) { await handleReconnect(data); return; }
+        if (!res.ok) { showError(data.error || 'No se pudo crear el envío.'); return; }
+
+        if (data.duplicates) {
+          $('quotaText').textContent = 'Se quitaron ' + data.duplicates + ' correos repetidos.';
+        }
+        renderProgress({ total: data.total, sent: 0, failed: 0, pending: data.total, quota: data.quota });
+        await runCampaign(data.id);
       } else {
-        results.innerHTML = data.detail.map(d =>
-          '<div class="result-row ' + (d.ok ? 'ok' : 'err') + '">' +
-            '<span class="dot"></span>' +
-            '<span class="who">' + d.to + '</span>' +
-            '<span class="msg">' + (d.ok ? 'Enviado ✓' : (d.error || 'Error')) + '</span>' +
-          '</div>'
-        ).join('');
+        // Sin base: envío directo, acotado a pocos destinatarios.
+        const res = await fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            html: htmlContent, subject: $('subject').value,
+            recipients: $('recipients').value, fileName, sender: currentSender(),
+          }),
+        });
+        if (bounceIfLoggedOut(res)) return;
+        const data = await res.json();
+
+        if (res.status === 409 && data.needsReconnect) { await handleReconnect(data); return; }
+        if (data.error) { showError(data.error); return; }
+        renderDetail(data.detail);
       }
     } catch (err) {
-      results.innerHTML = '<div class="result-row err"><span class="dot"></span><span class="msg">No se pudo conectar al servidor: ' + err.message + '</span></div>';
+      showError('No se pudo conectar al servidor: ' + err.message);
+    } finally {
+      sending = false;
+      sendBtn.textContent = 'Enviar test ✉️';
+      updateSendState();
     }
-
-    results.style.display = 'block';
-    sendBtn.textContent = 'Enviar test ✉️';
-    updateSendState();
   });
 </script>
 </body>
