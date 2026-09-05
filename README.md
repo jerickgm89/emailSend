@@ -80,14 +80,15 @@ TOKEN_ENC_KEY=...               # del comando de arriba
 ADMIN_EMAILS=tu_correo@gmail.com
 SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
-SMTP_USER=tu_correo@gmail.com
-SMTP_PASS=...                   # contraseña de aplicación, ver abajo
+SMTP_USER=                      # opcional, ver abajo
+SMTP_PASS=
 ```
 
-Para `SMTP_PASS` necesitas una **contraseña de aplicación** de Google
-(https://myaccount.google.com/apppasswords, requiere verificación en 2 pasos).
-Es independiente del OAuth: una cosa es la cuenta del sistema y otra el
-"conecta tu Gmail".
+`SMTP_USER`/`SMTP_PASS` son **opcionales**: configuran una cuenta del sistema
+compartida, alternativa a que cada quien envíe desde su propio Gmail. Déjalas
+vacías si no la quieres. Si sí, `SMTP_PASS` es una **contraseña de aplicación**
+de Google (https://myaccount.google.com/apppasswords, requiere verificación en
+2 pasos), no la de tu cuenta.
 
 ### 4. Arrancar
 
@@ -169,11 +170,11 @@ el caché al escribir). La lista se cachea 60 s, así que un cambio hecho desde
 otra instancia tarda como mucho un minuto. La cookie de 7 días no lo protege:
 la autorización se revalida en cada petición.
 
-## Base de datos (opcional hoy, obligatoria en la Fase 3)
+## Base de datos
 
-Sin Supabase la app funciona igual, pero no persiste nada: la identidad vive
-dentro de la cookie. Hace falta a partir de la Fase 3, cuando haya refresh
-tokens de Gmail que guardar.
+Sin Supabase la app arranca y el login funciona (la identidad vive dentro de la
+cookie), pero no hay panel de accesos, ni cola por lotes, ni forma de conectar
+tu Gmail: los refresh tokens necesitan dónde guardarse. En la práctica, ponla.
 
 1. Crea un proyecto en [Supabase](https://supabase.com/).
 2. **SQL Editor** → pega [`schema.sql`](schema.sql) → Run. Es idempotente.
@@ -195,9 +196,15 @@ por diseño. Esa key nunca debe llegar al navegador.
 
 ## Enviar desde tu propio Gmail
 
-En **Enviar desde** puedes elegir entre la cuenta SMTP del sistema (cuota
-compartida) y tu propia cuenta de Gmail (tu cuota, y los correos quedan en tus
-*Enviados*). Para conectarla, agrega estos redirect URIs al mismo OAuth client:
+El modo normal: **cada usuario autorizado conecta su cuenta y los correos salen
+de su bandeja**, con su cuota y quedando en sus *Enviados*.
+
+La cuenta SMTP del sistema (`SMTP_USER`/`SMTP_PASS`) es una **alternativa
+opcional**: una sola bandeja compartida por todos. Si dejas esas variables
+vacías, la app funciona igual — simplemente desaparece esa opción del selector
+*Enviar desde*, y hasta que conectes tu Gmail el botón de enviar te lo dice.
+
+Para conectar tu Gmail, agrega estos redirect URIs al mismo OAuth client:
 
 ```
 http://localhost:3300/auth/gmail/callback
@@ -235,8 +242,7 @@ Luego, en **Project → Settings → Environment Variables**, agrega:
 
 | Variable | Valor |
 |---|---|
-| `SMTP_USER` | tu correo de Gmail |
-| `SMTP_PASS` | la contraseña de aplicación |
+| `SMTP_USER` / `SMTP_PASS` | opcionales (cuenta del sistema compartida) |
 | `FROM_NAME` | nombre del remitente |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | del OAuth client |
 | `OAUTH_REDIRECT_BASE` | `https://tu-app.vercel.app` (fíjalo: los deploys de preview tienen URLs aleatorias que Google rechaza) |

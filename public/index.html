@@ -366,7 +366,11 @@
   });
 
   // ---- Configuración del servidor ----
+  // Declarados aquí arriba porque renderSender() llama a updateSendState(),
+  // que los lee.
   let gmailConnected = false;
+  let smtpAvailable = false;
+  let sending = false;
 
   function showGmailNote(msg, ok) {
     const n = $('gmailNote');
@@ -382,11 +386,13 @@
   if (gmailOk || gmailErr) history.replaceState(null, '', location.pathname);
 
   function renderSender(cfg) {
-    $('smtpDesc').textContent = cfg.configured
-      ? cfg.from + ' · cuota compartida entre todos'
-      : 'SMTP sin configurar en el servidor';
-    $('optSmtp').querySelector('input').disabled = !cfg.configured;
-    $('optSmtp').classList.toggle('disabled', !cfg.configured);
+    // La cuenta del sistema es opcional. Si no está configurada no es media
+    // opción, es ninguna: se oculta en vez de mostrarse gris y rota.
+    smtpAvailable = Boolean(cfg.configured);
+    $('optSmtp').style.display = smtpAvailable ? 'flex' : 'none';
+    if (smtpAvailable) {
+      $('smtpDesc').textContent = cfg.from + ' · cuota compartida entre todos';
+    }
 
     gmailConnected = Boolean(cfg.gmail && cfg.gmail.connected);
     const radio = $('optGmail').querySelector('input');
@@ -401,13 +407,15 @@
     } else {
       $('gmailDesc').textContent = cfg.gmail && cfg.gmail.reason === 'no-db'
         ? 'Necesita Supabase configurado en el servidor.'
-        : 'Sin conectar. Los correos saldrían de tu propia bandeja y con tu cuota.';
+        : 'Sin conectar. Los correos saldrán de tu propia bandeja y con tu cuota.';
       radio.disabled = true;
       $('optGmail').classList.add('disabled');
-      $('optSmtp').querySelector('input').checked = cfg.configured;
+      if (smtpAvailable) $('optSmtp').querySelector('input').checked = true;
       $('gmailAction').textContent = 'Conectar mi Gmail';
       $('gmailAction').disabled = Boolean(cfg.gmail && cfg.gmail.reason === 'no-db');
     }
+
+    updateSendState();
   }
 
   $('gmailAction').addEventListener('click', async () => {
@@ -417,16 +425,22 @@
     location.reload();
   });
 
-  const currentSender = () => document.querySelector('input[name=sender]:checked')?.value || 'smtp';
+  // Sin nada marcado, cae en lo único disponible — nunca en 'smtp' a ciegas.
+  function currentSender() {
+    const checked = document.querySelector('input[name=sender]:checked');
+    if (checked) return checked.value;
+    return gmailConnected ? 'gmail' : 'smtp';
+  }
 
   async function loadConfig() {
     const cfg = await fetch('/api/config').then(r => r.json());
+    // Que no haya cuenta del sistema no es un fallo: es la app funcionando
+    // como debe, con cada quien enviando desde su propio Gmail.
     const badge = $('configBadge');
     if (cfg.configured) {
       badge.textContent = 'SMTP: ' + cfg.from;
     } else {
-      badge.textContent = '⚠️ SMTP sin configurar (revisa .env)';
-      badge.classList.add('err');
+      badge.style.display = 'none';
     }
     renderSender(cfg);
     queueEnabled = Boolean(cfg.queue);
@@ -528,11 +542,22 @@
 
   // ---- Envío ----
   $('recipients').addEventListener('input', updateSendState);
+
   function updateSendState() {
-    sendBtn.disabled = sending || !htmlContent || !$('recipients').value.trim();
+    if (sending) { sendBtn.disabled = true; return; }
+
+    // Sin Gmail conectado y sin cuenta del sistema no hay por dónde enviar.
+    // Decirlo en el propio botón evita el error genérico al hacer clic.
+    if (!gmailConnected && !smtpAvailable) {
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Conecta tu Gmail para enviar';
+      return;
+    }
+
+    sendBtn.textContent = 'Enviar test ✉️';
+    sendBtn.disabled = !htmlContent || !$('recipients').value.trim();
   }
 
-  let sending = false;
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const results = () => $('results');
 
@@ -659,7 +684,6 @@
       showError('No se pudo conectar al servidor: ' + err.message);
     } finally {
       sending = false;
-      sendBtn.textContent = 'Enviar test ✉️';
       updateSendState();
     }
   });

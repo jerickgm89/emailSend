@@ -28,7 +28,9 @@ function buildTransporter() {
 export async function sendViaSmtp({ fromName, recipients, subject, html }) {
   const transporter = buildTransporter();
   if (!transporter) {
-    throw new Error('SMTP no configurado. Define SMTP_USER y SMTP_PASS (ver .env.example).');
+    // La cuenta del sistema es opcional: lo normal es enviar desde el Gmail
+    // de cada usuario. Por eso el mensaje apunta ahí y no al .env.
+    throw new Error('No hay cuenta del sistema configurada. Conecta tu Gmail para enviar.');
   }
 
   // Un envío por destinatario: si uno rebota, los demás igual llegan,
