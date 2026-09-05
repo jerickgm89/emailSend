@@ -4,12 +4,19 @@
   "description": "App web para enviar tests de newsletters HTML a correos reales (Gmail, iCloud, Outlook)",
   "type": "module",
   "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.115.0",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "jose": "^6.2.12",
     "nodemailer": "^6.9.14"
   }
 }
