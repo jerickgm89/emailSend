@@ -15,6 +15,7 @@
 // valdría la pena mover /step a un cron cada minuto.
 
 import { requireAuth } from './auth.js';
+import { wrap } from './wrap.js';
 import { sendViaGmail, GmailAuthError, gmailStatus } from './gmail.js';
 import { sendViaSmtp, smtpConfigured, smtpAddress } from './smtp.js';
 import {
@@ -70,7 +71,7 @@ function requireDb(req, res) {
 
 export function mountCampaigns(app) {
   // --- Crear la campaña (no envía nada todavía) ---------------------------
-  app.post('/api/campaigns', requireAuth, async (req, res) => {
+  app.post('/api/campaigns', requireAuth, wrap(async (req, res) => {
     if (!requireDb(req, res)) return;
 
     const { html, subject, recipients, fileName, sender } = req.body || {};
@@ -95,7 +96,9 @@ export function mountCampaigns(app) {
       fromEmail = status.email;
     } else {
       if (!smtpConfigured()) {
-        return res.status(500).json({ error: 'SMTP no configurado en el servidor.' });
+        return res.status(400).json({
+          error: 'No hay cuenta del sistema configurada. Conecta tu Gmail para enviar.',
+        });
       }
       fromEmail = smtpAddress();
     }
@@ -123,10 +126,10 @@ export function mountCampaigns(app) {
     });
 
     res.status(201).json({ id: campaign.id, total: list.length, from: fromEmail, duplicates, quota });
-  });
+  }));
 
   // --- Enviar el siguiente lote -------------------------------------------
-  app.post('/api/campaigns/:id/step', requireAuth, async (req, res) => {
+  app.post('/api/campaigns/:id/step', requireAuth, wrap(async (req, res) => {
     if (!requireDb(req, res)) return;
 
     const campaign = await getCampaign(req.user.uid, req.params.id);
@@ -205,15 +208,15 @@ export function mountCampaigns(app) {
       quota: await remainingQuota(req.user.uid, campaign.sender),
       ...progress,
     });
-  });
+  }));
 
   // --- Progreso ------------------------------------------------------------
-  app.get('/api/campaigns/unfinished', requireAuth, async (req, res) => {
+  app.get('/api/campaigns/unfinished', requireAuth, wrap(async (req, res) => {
     if (!dbEnabled() || !req.user.uid) return res.json({ campaigns: [] });
     res.json({ campaigns: await unfinishedCampaigns(req.user.uid) });
-  });
+  }));
 
-  app.get('/api/campaigns/:id', requireAuth, async (req, res) => {
+  app.get('/api/campaigns/:id', requireAuth, wrap(async (req, res) => {
     if (!requireDb(req, res)) return;
 
     const campaign = await getCampaign(req.user.uid, req.params.id);
@@ -227,5 +230,5 @@ export function mountCampaigns(app) {
       status: campaign.status,
       ...(await campaignProgress(campaign.id)),
     });
-  });
+  }));
 }

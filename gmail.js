@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import MailComposer from 'nodemailer/lib/mail-composer/index.js';
 import { jwtVerify, createRemoteJWKSet } from 'jose';
 import { requireAuth } from './auth.js';
+import { wrap } from './wrap.js';
 import { saveGmailAccount, getGmailAccount, revokeGmailAccount, dbEnabled } from './db.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -220,7 +221,7 @@ export function mountGmail(app) {
     res.redirect(`${GOOGLE_AUTH_URL}?${params}`);
   });
 
-  app.get('/auth/gmail/callback', requireAuth, async (req, res) => {
+  app.get('/auth/gmail/callback', requireAuth, wrap(async (req, res) => {
     const back = (msg) => res.redirect('/?gmail_error=' + encodeURIComponent(msg));
 
     const [expectedState, expectedNonce] = String(req.cookies?.[CONNECT_COOKIE] || '').split('.');
@@ -283,11 +284,11 @@ export function mountGmail(app) {
     } catch (err) {
       return back(`Error conectando Gmail: ${err.message}`);
     }
-  });
+  }));
 
-  app.post('/auth/gmail/disconnect', requireAuth, async (req, res) => {
+  app.post('/auth/gmail/disconnect', requireAuth, wrap(async (req, res) => {
     tokenCache.delete(req.user.uid);
     await revokeGmailAccount(req.user.uid);
     res.json({ ok: true });
-  });
+  }));
 }

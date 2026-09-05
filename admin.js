@@ -5,6 +5,7 @@
 // aquí: son el candado de emergencia que evita quedarte fuera de tu propia app.
 
 import { requireAdmin, adminEntries, envEntries, invalidateAllowCache } from './auth.js';
+import { wrap } from './wrap.js';
 import {
   dbEnabled,
   listAllowedEmails,
@@ -37,7 +38,7 @@ function requireDb(res) {
 }
 
 export function mountAdmin(app) {
-  app.get('/api/admin/access', requireAdmin, async (req, res) => {
+  app.get('/api/admin/access', requireAdmin, wrap(async (req, res) => {
     res.json({
       // Fuentes de solo lectura: se muestran para que no te preguntes por qué
       // alguien entra aunque no esté en la lista editable.
@@ -47,9 +48,9 @@ export function mountAdmin(app) {
       users: await listUsers(),
       dbEnabled: dbEnabled(),
     });
-  });
+  }));
 
-  app.post('/api/admin/access', requireAdmin, async (req, res) => {
+  app.post('/api/admin/access', requireAdmin, wrap(async (req, res) => {
     if (!requireDb(res)) return;
 
     const { entry, error } = normalizeEntry(req.body?.entry);
@@ -74,9 +75,9 @@ export function mountAdmin(app) {
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
-  });
+  }));
 
-  app.delete('/api/admin/access/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/admin/access/:id', requireAdmin, wrap(async (req, res) => {
     if (!requireDb(res)) return;
 
     const removed = await removeAllowedEmail(req.params.id);
@@ -85,5 +86,5 @@ export function mountAdmin(app) {
     invalidateAllowCache();
     console.log(`[admin] ${req.user.email} quitó ${removed.entry}`);
     res.json({ ok: true, entry: removed.entry });
-  });
+  }));
 }

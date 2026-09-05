@@ -10,6 +10,7 @@
 import crypto from 'node:crypto';
 import { SignJWT, jwtVerify, createRemoteJWKSet } from 'jose';
 import { upsertUser, dbEnabled, listAllowedEmails } from './db.js';
+import { wrap } from './wrap.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -200,7 +201,7 @@ export function mountAuth(app) {
     res.redirect(`${GOOGLE_AUTH_URL}?${params}`);
   });
 
-  app.get('/auth/google/callback', async (req, res) => {
+  app.get('/auth/google/callback', wrap(async (req, res) => {
     const fail = (msg) => res.redirect('/?auth_error=' + encodeURIComponent(msg));
 
     if (req.query.error) return fail(`Google devolvió: ${req.query.error}`);
@@ -258,18 +259,18 @@ export function mountAuth(app) {
       res.status(500);
       return fail(`Error en el login: ${err.message}`);
     }
-  });
+  }));
 
   app.post('/auth/logout', (req, res) => {
     res.clearCookie(SESSION_COOKIE, { path: '/' });
     res.json({ ok: true });
   });
 
-  app.get('/api/me', async (req, res) => {
+  app.get('/api/me', wrap(async (req, res) => {
     const user = await readSession(req);
     if (!user) {
       return res.status(401).json({ error: 'No autenticado.', authConfigured: authConfigured() });
     }
     res.json({ user, storage: { db: dbEnabled(), persisted: Boolean(user.uid) } });
-  });
+  }));
 }

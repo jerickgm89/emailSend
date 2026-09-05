@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mountAuth, requireAuth } from './auth.js';
+import { wrap } from './wrap.js';
 import { mountGmail, gmailStatus, sendViaGmail, GmailAuthError } from './gmail.js';
 import { mountCampaigns, parseRecipients } from './campaigns.js';
 import { mountAdmin } from './admin.js';
@@ -25,7 +26,7 @@ mountCampaigns(app);
 mountAdmin(app);
 
 // Estado de configuración para que la UI avise si falta el .env
-app.get('/api/config', requireAuth, async (req, res) => {
+app.get('/api/config', requireAuth, wrap(async (req, res) => {
   res.json({
     configured: smtpConfigured(),
     from: smtpAddress(),
@@ -35,14 +36,14 @@ app.get('/api/config', requireAuth, async (req, res) => {
     // Con base hay cola por lotes; sin ella, solo el envío directo de abajo.
     queue: Boolean(dbEnabled() && req.user.uid),
   });
-});
+}));
 
 
 // Envío directo, en una sola petición. Es el camino cuando NO hay Supabase:
 // sin base no hay dónde guardar la cola, así que se acota a pocos
 // destinatarios para no chocar con el tope de duración de la función.
 // Con base configurada la UI usa /api/campaigns, que sí escala.
-app.post('/api/send', requireAuth, async (req, res) => {
+app.post('/api/send', requireAuth, wrap(async (req, res) => {
   const { html, subject, recipients, fileName, sender } = req.body || {};
 
   if (!html || typeof html !== 'string' || !html.trim()) {
@@ -93,6 +94,15 @@ app.post('/api/send', requireAuth, async (req, res) => {
     sent, total: list.length, detail: result.detail,
     sender: sender === 'gmail' ? 'gmail' : 'smtp', from: result.from,
   });
+}));
+
+// Última red: cualquier error que se escape de un handler (incluidos los
+// asíncronos, gracias a wrap()) sale como JSON en vez de tumbar la función.
+// El detalle va al log, no al cliente: puede llevar datos de la base.
+app.use((err, req, res, next) => {
+  console.error('[error]', req.method, req.path, err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Error interno del servidor. Revisa los logs.' });
 });
 
 export default app;
